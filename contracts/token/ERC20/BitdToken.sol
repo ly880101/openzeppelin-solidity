@@ -22,6 +22,9 @@ contract BitdToken is ERC20Frozensable,ERC20Mintable,ERC20Burnable {
         _decimals = decimals;
     }
     
+    function () external payable {
+        revert();
+    }
     
     /**
      * @dev Returns the name of the token.
