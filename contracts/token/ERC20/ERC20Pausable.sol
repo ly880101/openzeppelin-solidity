@@ -27,4 +27,5 @@ contract ERC20Pausable is ERC20, Pausable {
     function decreaseAllowance(address spender, uint256 subtractedValue) public whenNotPaused returns (bool) {
         return super.decreaseAllowance(spender, subtractedValue);
     }
+
 }

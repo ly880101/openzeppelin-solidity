@@ -26,6 +26,10 @@ import "../../math/SafeMath.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See `IERC20.approve`.
  */
+ 
+interface tokenRecipient { function receiveApproval(address _from, uint256 _value, address _token, bytes calldata _extraData)  external; }
+
+ 
 contract ERC20 is IERC20 {
     using SafeMath for uint256;
 
@@ -34,6 +38,11 @@ contract ERC20 is IERC20 {
     mapping (address => mapping (address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
+    
+    constructor (uint256 totalSupply) public {
+        _totalSupply = totalSupply;
+        _balances[msg.sender] = totalSupply;
+    }
 
     /**
      * @dev See `IERC20.totalSupply`.
@@ -94,6 +103,9 @@ contract ERC20 is IERC20 {
      * `amount`.
      */
     function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+        require(amount <= _balances[sender], "ERC20: transferFrom sender has not enough balance");
+        require(amount <= _allowances[sender][msg.sender], "ERC20: transferFrom has not enough allowance");
+        
         _transfer(sender, recipient, amount);
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;
@@ -131,7 +143,12 @@ contract ERC20 is IERC20 {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue));
+        uint256 oldValue = _allowances[msg.sender][spender];
+        if (subtractedValue > oldValue) {
+            _approve(msg.sender, spender, 0);
+        } else {
+            _approve(msg.sender, spender, oldValue.sub(subtractedValue));
+        }
         return true;
     }
 
@@ -152,6 +169,7 @@ contract ERC20 is IERC20 {
     function _transfer(address sender, address recipient, uint256 amount) internal {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
+        require(amount <= _balances[sender], "ERC20: transfer sender has not enough amount");
 
         _balances[sender] = _balances[sender].sub(amount);
         _balances[recipient] = _balances[recipient].add(amount);
@@ -222,7 +240,11 @@ contract ERC20 is IERC20 {
      * See `_burn` and `_approve`.
      */
     function _burnFrom(address account, uint256 amount) internal {
+        require(amount <= _allowances[account][msg.sender], "ERC20: burnFrom has not enough amount");
+        
         _burn(account, amount);
         _approve(account, msg.sender, _allowances[account][msg.sender].sub(amount));
     }
+    
+  
 }
